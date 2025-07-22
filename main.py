@@ -1,49 +1,34 @@
 import streamlit as st 
-from pymongo import MongoClient
-import gridfs
-import io
 
-# Load MongoDB secrets
-uri = st.secrets["mongodb"]["uri"]
-db_name = st.secrets["mongodb"]["db"]
-collection_name = st.secrets["mongodb"]["collection"]
+st.title("📁 Upload and Download Multiple Files")
 
-# Connect to MongoDB and GridFS
-client = MongoClient(uri)
-db = client[db_name]
-fs = gridfs.GridFS(db)
+# Allow multiple file uploads
+uploaded_files = st.file_uploader("Choose files", accept_multiple_files=True)
 
-st.title("📤 Upload Files to MongoDB")
+if uploaded_files:
+    st.success(f"{len(uploaded_files)} file(s) uploaded.")
 
-uploaded_file = st.file_uploader("Choose a file")
-
-if uploaded_file:
-    # Save to MongoDB GridFS
-    file_data = uploaded_file.read()
-    filename = uploaded_file.name
-
-    # Check if file with same name already exists
-    existing = db.fs.files.find_one({"filename": filename})
-    if existing:
-        st.warning("File already exists. Overwriting.")
-        db.fs.files.delete_one({"_id": existing["_id"]})
-
-    fs.put(file_data, filename=filename)
-    st.success(f"✅ File `{filename}` uploaded to MongoDB!")
-
-# Retrieve and list files
-st.subheader("📂 Files in MongoDB")
-files = db.fs.files.find().sort("uploadDate", -1)
-
-for f in files:
-    st.markdown(f"📄 **{f['filename']}** — {f['length']} bytes")
-    file_id = f["_id"]
-
-    if st.button(f"Download {f['filename']}", key=str(file_id)):
-        file_data = fs.get(file_id).read()
+    for file in uploaded_files:
+        st.write(f"📄 **{file.name}**")
+        
+        # Read content
+        content = file.read()
+        
+        # Try to display content if it's a text file
+        try:
+            text = content.decode("utf-8")
+            st.text_area(f"Content of {file.name}:", text, height=150)
+        except Exception:
+            st.info(f"{file.name} may be a binary or non-text file.")
+        
+        # Download button
         st.download_button(
-            label=f"⬇️ Save {f['filename']}",
-            data=file_data,
-            file_name=f['filename'],
+            label=f"⬇️ Download {file.name}",
+            data=content,
+            file_name=file.name,
             mime="application/octet-stream"
         )
+
+        st.markdown("---")
+else:
+    st.info("Upload some files to view and download.")
