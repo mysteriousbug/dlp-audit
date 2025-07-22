@@ -17,9 +17,10 @@ if uploaded_files:
         # Try to display content if it's a text file
         try:
             text = content.decode("utf-8")
-            st.text_area(f"Content of {file.name}:", text, height=150)
+            #st.text_area(f"Content of {file.name}:", text, height=150)
         except Exception:
-            st.info(f"{file.name} may be a binary or non-text file.")
+            #st.info(f"{file.name} may be a binary or non-text file.")
+            st.info("")
         
         # Download button
         st.download_button(
